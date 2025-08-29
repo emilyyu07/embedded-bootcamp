@@ -24,7 +24,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "spi.h"
+#include "tim.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +56,8 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint16_t read_ADC(uint8_t channel);
+uint32_t ADC_to_counts(uint16_t adc_value);
 /* USER CODE END 0 */
 
 /**
@@ -65,6 +67,9 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+
+
 
   /* USER CODE END 1 */
 
@@ -87,7 +92,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+
   /* USER CODE BEGIN 2 */
+  MX_SPI1_Init();
+  MX_TIM1_Init();
+  HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
 
   /* USER CODE END 2 */
 
@@ -97,6 +106,11 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+	  uint16_t adc_value=read_ADC(0);
+	  uint32_t pwm_value=ADC_to_counts(adc_value);
+	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1,pwm_value);
+
+	  HAL_Delay(10);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -143,6 +157,31 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+uint16_t read_ADC(uint8_t channel){
+	uint8_t MISO[3];
+	uint8_t MOSI[3];
+
+	MOSI[0]=0x01;
+	MOSI[1]=0x08 | (channel << 4);
+	MOSI[2]=0x00;
+
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8, GPIO_PIN_RESET);
+
+	HAL_SPI_TransmitReceive(&hspi1,MOSI,MISO,3,1000);
+
+	HAL_GPIO_WritePin(GPIOB,GPIO_PIN_8, GPIO_PIN_SET);
+
+	uint16_t adc_value=((MISO[1] & 0x03) << 8) | MISO[2];
+	return adc_value;
+}
+
+
+uint32_t ADC_to_counts(uint16_t adc_value){
+	uint32_t min=1000;
+	uint32_t max=2000;
+	uint32_t count= min + (adc_value*(max-min)) / 1023;
+	return count;
+}
 
 /* USER CODE END 4 */
 
