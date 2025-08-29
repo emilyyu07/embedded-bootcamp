@@ -177,8 +177,8 @@ uint16_t read_ADC(uint8_t channel){
 
 
 uint32_t ADC_to_counts(uint16_t adc_value){
-	uint32_t min=1000;
-	uint32_t max=2000;
+	uint32_t min=3200;
+	uint32_t max=6400;
 	uint32_t count= min + (adc_value*(max-min)) / 1023;
 	return count;
 }
